@@ -18,69 +18,73 @@ import re
 # No need to change directory - files are in the same folder as the script
 
 # Read your data
-# df = pd.read_csv('model_summary_all.csv')  # or whatever format
-#
-#
-# # Function to parse the dependent variable
-# def parse_dependent(dep_str):
-#     # Extract horizon (Pre/Post)
-#     if dep_str.startswith('lag_'):
-#         horizon = 'Pre'
-#         dep_str_clean = dep_str.replace('lag_', '')
-#     else:
-#         horizon = 'Post'
-#         dep_str_clean = dep_str
-#
-#     # Extract dependent variable type
-#     if 'vol' in dep_str_clean:
-#         var_type = 'Total Volume'
-#         # Extract window number
-#         match = re.search(r'vol_(\d+)per', dep_str_clean)
-#     elif 'absret' in dep_str_clean or 'abs_ret' in dep_str_clean:
-#         var_type = 'Absolute Returns'
-#         # Extract window number
-#         match = re.search(r'(?:absret|abs_ret)_(\d+)_?per', dep_str_clean)
-#
-#     # Map window numbers to hours
-#     if match:
-#         window_num = int(match.group(1))
-#         window_map = {66: '48 hours', 33: '24 hours', 4: '2 hours', 2: '1 hour'}
-#         window = window_map.get(window_num, f'{window_num}')
-#     else:
-#         window = None
-#
-#     return pd.Series([var_type, window, horizon])
-#
-#
-# # Apply the function
-# df[['Dependent_Variable', 'Window', 'Horizon']] = df['dependent'].apply(parse_dependent)
-#
-# # Save the updated dataframe
-# df.to_csv('regression_results_parsed.csv', index=False)
+df = pd.read_csv('model_summary_all.csv')  # or whatever format
 
-# df = pd.read_csv('residuals_all.csv')
-# # Apply the function
-# df[['Dependent_Variable', 'Window', 'Horizon']] = df['dependent_variable'].apply(parse_dependent)
-#
-# # Save the updated dataframe
-# df.to_csv('residuals_all_parsed.csv', index=False)
 
-# df = pd.read_csv('model_summary_all_retail.csv')
-# # Apply the function
-# df[['Dependent_Variable', 'Window', 'Horizon']] = df['dependent'].apply(parse_dependent)
-#
-# df['Retail_Flag'] = "Retail"
-#
-# # Save the updated dataframe
-# df.to_csv('regression_retail_results_parsed.csv', index=False)
-#
-# df = pd.read_csv('residuals_all.csv')
-# # Apply the function
-# df[['Dependent_Variable', 'Window', 'Horizon']] = df['dependent_variable'].apply(parse_dependent)
-#
-# df['Retail_Flag'] = "Retail"
-# # Save the updated dataframe
-# df.to_csv('residuals_all_results_parsed.csv', index=False)
+# Function to parse the dependent variable
+def parse_dependent(dep_str):
+    # Extract horizon (Pre/Post)
+    if dep_str.startswith('lag_'):
+        horizon = 'Pre'
+        dep_str_clean = dep_str.replace('lag_', '')
+    else:
+        horizon = 'Post'
+        dep_str_clean = dep_str
+
+    # Extract dependent variable type
+    if 'vol' in dep_str_clean:
+        var_type = 'Total Volume'
+        # Extract window number
+        match = re.search(r'vol_(\d+)per', dep_str_clean)
+    elif 'absret' in dep_str_clean or 'abs_ret' in dep_str_clean:
+        var_type = 'Absolute Returns'
+        # Extract window number
+        match = re.search(r'(?:absret|abs_ret)_(\d+)_?per', dep_str_clean)
+
+    # Map window numbers to hours
+    if match:
+        window_num = int(match.group(1))
+        window_map = {66: '48 hours', 33: '24 hours', 4: '2 hours', 2: '1 hour'}
+        window = window_map.get(window_num, f'{window_num}')
+    else:
+        window = None
+
+    return pd.Series([var_type, window, horizon])
+
+
+# Apply the function
+df[['Dependent_Variable', 'Window', 'Horizon']] = df['dependent'].apply(parse_dependent)
+
+df['Retail_Flag'] = "Not Retail"
+
+# Save the updated dataframe
+df.to_csv('regression_results_parsed.csv', index=False)
+
+df = pd.read_csv('residuals_all.csv')
+# Apply the function
+df[['Dependent_Variable', 'Window', 'Horizon']] = df['dependent_variable'].apply(parse_dependent)
+
+df['Retail_Flag'] = "Not Retail"
+
+# Save the updated dataframe
+df.to_csv('residuals_all_parsed.csv', index=False)
+
+df = pd.read_csv('model_summary_all_retail.csv')
+# Apply the function
+df[['Dependent_Variable', 'Window', 'Horizon']] = df['dependent'].apply(parse_dependent)
+
+df['Retail_Flag'] = "Retail"
+
+# Save the updated dataframe
+df.to_csv('regression_retail_results_parsed.csv', index=False)
+
+df = pd.read_csv('residuals_all_retail.csv')
+# Apply the function
+df[['Dependent_Variable', 'Window', 'Horizon']] = df['dependent_variable'].apply(parse_dependent)
+
+df['Retail_Flag'] = "Retail"
+# Save the updated dataframe
+df.to_csv('residuals_retail_parsed.csv', index=False)
 
 
 # Page configuration
@@ -146,7 +150,7 @@ def load_data():
 
         # Load and combine residuals
         residual_sds_nonretail = pd.read_csv('residuals_all_parsed.csv')
-        residual_sds_retail = pd.read_csv('residuals_all_results_parsed.csv')
+        residual_sds_retail = pd.read_csv('residuals_retail_parsed.csv')
         residual_sds = pd.concat([residual_sds_nonretail, residual_sds_retail], ignore_index=True)
 
         # Rename columns to match expected format
