@@ -547,7 +547,7 @@ def create_bar_chart(dv, dv_name, retail_flag='Not Retail'):
     return fig
 
 # Create charts for each dependent variable
-st.subheader("Total Volume (Non-Retail)")
+st.subheader("Total Volume")
 fig_tv = create_bar_chart('Total Volume', 'Total Volume', 'Not Retail')
 st.plotly_chart(fig_tv, use_container_width=True)
 
@@ -555,7 +555,7 @@ st.subheader("Retail Volume")
 fig_rv = create_bar_chart('Total Volume', 'Retail Volume', 'Retail')
 st.plotly_chart(fig_rv, use_container_width=True)
 
-st.subheader("Absolute Returns (Non-Retail)")
+st.subheader("Absolute Returns")
 fig_ar = create_bar_chart('Absolute Returns', 'Absolute Returns', 'Not Retail')
 st.plotly_chart(fig_ar, use_container_width=True)
 
