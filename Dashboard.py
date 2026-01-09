@@ -15,7 +15,7 @@ import io
 import os
 import re
 
-os.chdir('C:/Users/me25l/OneDrive - Florida State University/8K reaction')
+# No need to change directory - files are in the same folder as the script
 
 # Read your data
 # df = pd.read_csv('model_summary_all.csv')  # or whatever format
