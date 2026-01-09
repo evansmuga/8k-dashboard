@@ -117,6 +117,8 @@ def load_data():
                 'Item_1.01': 'Entry into Material Agreement',
                 'Item_1.02': 'Termination of Material Agreement',
                 'Item_1.03': 'Bankruptcy or Receivership',
+                'Item_1.04': 'Mine Safety',
+                'Item_1.05': 'Material Cybersecurity Incident',
                 'Item_2.01': 'Completion of Acquisition/Disposition',
                 'Item_2.02': 'Results of Operations',
                 'Item_2.03': 'Creation of Direct Financial Obligation',
@@ -125,10 +127,17 @@ def load_data():
                 'Item_2.06': 'Material Impairments',
                 'Item_3.01': 'Notice of Delisting',
                 'Item_3.02': 'Unregistered Sales of Equity',
+                'Item_3.03': 'Material Modification to Rights of Security Holders',
                 'Item_4.01': 'Changes in Registrant Certifying Accountant',
+                'Item_4.02': 'Non Reliance on Previously Issued Financial Statements',
                 'Item_5.01': 'Changes in Control',
                 'Item_5.02': 'Departure/Election of Directors or Officers',
                 'Item_5.03': 'Amendments to Articles/Bylaws',
+                'Item_5.04': 'Temporary Suspension of Trading',
+                'Item_5.05': 'Amendments or Waiver to the Code of Ethics',
+                'Item_5.06': 'Transaction in Which a Company Ceases to be a Shell Company',
+                'Item_5.07': 'Results of Shareholder Voting',
+                'Item_5.08': 'Shareholder Director Nominations',
                 'Item_7.01': 'Regulation FD Disclosure',
                 'Item_8.01': 'Other Events',
                 'Item_9.01': 'Financial Statements and Exhibits'
@@ -175,20 +184,29 @@ sig_threshold = st.sidebar.slider(
     step=1.0
 ) / 100
 
-# Materiality threshold
-materiality_threshold = st.sidebar.slider(
-    "Materiality Threshold (as % of Residual SD)",
-    min_value=5.0,
-    max_value=50.0,
-    value=20.0,
-    step=1.0
-) / 100
-
 # Coefficient scaling toggle
 scale_by_sd = st.sidebar.checkbox(
     "Scale coefficients by residual standard deviations",
     value=False
 )
+
+# Materiality threshold (changes based on scaling)
+if scale_by_sd:
+    materiality_threshold = st.sidebar.slider(
+        "Materiality Threshold (as % of Residual SD)",
+        min_value=5.0,
+        max_value=50.0,
+        value=20.0,
+        step=1.0
+    ) / 100
+else:
+    materiality_threshold = st.sidebar.slider(
+        "Materiality Threshold (basis points)",
+        min_value=1,
+        max_value=50,
+        value=10,
+        step=1
+    ) / 10000  # Convert basis points to decimal
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("*Adjust controls to dynamically update results*")
