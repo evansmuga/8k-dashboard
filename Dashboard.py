@@ -228,13 +228,13 @@ def load_data(filing_type):
 
 @st.cache_data
 def load_disclosures():
-    """Load the disclosures_only.csv file with filing-level data"""
+    """Load the disclosures_items_only.csv file with filing-level data"""
     try:
 
         disclosures = pd.read_csv('disclosures_items_only.csv', low_memory=False)
         return disclosures
     except FileNotFoundError as e:
-        st.error(f"disclosures_only.csv not found: {e}")
+        st.error(f"disclosures_items_only.csv not found: {e}")
         st.stop()
 
 results_df, residual_sds_df = load_data(filing_type)
@@ -297,12 +297,20 @@ else:
         step=1
     ) / 10000  # Convert basis points to decimal
 
-# Item 9.01 inclusion toggle
-include_item_901 = st.sidebar.checkbox(
-    "Include Item 9.01 in filing-level statistics",
-    value=True,
-    help="Item 9.01 (Financial Statements and Exhibits) occurs frequently with other items"
+# Filing-level statistics toggle
+show_filing_stats = st.sidebar.checkbox(
+    "Show filing-level statistics",
+    value=False,
+    help="Calculate and display statistics about filings (slower to compute)"
 )
+
+# Item 9.01 inclusion toggle (only show if filing stats are enabled)
+if show_filing_stats:
+    include_item_901 = st.sidebar.checkbox(
+        "Include Item 9.01 in filing-level statistics",
+        value=True,
+        help="Item 9.01 (Financial Statements and Exhibits) occurs frequently with other items"
+    )
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("*Adjust controls to dynamically update results*")
@@ -578,37 +586,38 @@ summary_text = f"""Under current settings, **{len(classifications['current_mater
 **{len(classifications['neither'])} items** are Neither Current nor Material."""
 st.markdown(summary_text)
 
-# Filing-level statistics
-st.subheader("Filing-Level Statistics")
-filing_stats = calculate_filing_statistics(classifications, disclosures_df, filing_type, include_item_901)
+# Filing-level statistics (only if enabled)
+if show_filing_stats:
+    st.subheader("Filing-Level Statistics")
+    filing_stats = calculate_filing_statistics(classifications, disclosures_df, filing_type, include_item_901)
 
-if filing_stats:
-    st.markdown(f"*Based on {filing_stats['total_filings']:,} filings" +
-                (" (excluding Item 9.01)" if not include_item_901 else "") + "*")
+    if filing_stats:
+        st.markdown(f"*Based on {filing_stats['total_filings']:,} filings" +
+                    (" (excluding Item 9.01)" if not include_item_901 else "") + "*")
 
-    col1, col2, col3 = st.columns(3)
+        col1, col2, col3 = st.columns(3)
 
-    with col1:
-        st.markdown("**Current & Material Items**")
-        st.markdown(f"- Only these items: **{filing_stats['current_material']['only']:.1f}%**")
-        st.markdown(f"- At least one: **{filing_stats['current_material']['at_least_one']:.1f}%**")
-        st.markdown(f"- None: **{filing_stats['current_material']['none']:.1f}%**")
+        with col1:
+            st.markdown("**Current & Material Items**")
+            st.markdown(f"- Only these items: **{filing_stats['current_material']['only']:.1f}%**")
+            st.markdown(f"- At least one: **{filing_stats['current_material']['at_least_one']:.1f}%**")
+            st.markdown(f"- None: **{filing_stats['current_material']['none']:.1f}%**")
 
-        st.markdown("")
-        st.markdown("**Neither Current nor Material**")
-        st.markdown(f"- Only these items: **{filing_stats['neither']['only']:.1f}%**")
+            st.markdown("")
+            st.markdown("**Neither Current nor Material**")
+            st.markdown(f"- Only these items: **{filing_stats['neither']['only']:.1f}%**")
 
-    with col2:
-        st.markdown("**Current Items**")
-        st.markdown(f"- Only current items: **{filing_stats['current']['only']:.1f}%**")
-        st.markdown(f"- At least one: **{filing_stats['current']['at_least_one']:.1f}%**")
-        st.markdown(f"- No current items: **{filing_stats['current']['none']:.1f}%**")
+        with col2:
+            st.markdown("**Current Items**")
+            st.markdown(f"- Only current items: **{filing_stats['current']['only']:.1f}%**")
+            st.markdown(f"- At least one: **{filing_stats['current']['at_least_one']:.1f}%**")
+            st.markdown(f"- No current items: **{filing_stats['current']['none']:.1f}%**")
 
-    with col3:
-        st.markdown("**Material Items**")
-        st.markdown(f"- Only material items: **{filing_stats['material']['only']:.1f}%**")
-        st.markdown(f"- At least one: **{filing_stats['material']['at_least_one']:.1f}%**")
-        st.markdown(f"- No material items: **{filing_stats['material']['none']:.1f}%**")
+        with col3:
+            st.markdown("**Material Items**")
+            st.markdown(f"- Only material items: **{filing_stats['material']['only']:.1f}%**")
+            st.markdown(f"- At least one: **{filing_stats['material']['at_least_one']:.1f}%**")
+            st.markdown(f"- No material items: **{filing_stats['material']['none']:.1f}%**")
 
 st.markdown("---")
 
