@@ -226,7 +226,19 @@ def load_data(filing_type):
         st.error(f"Data files not found: {e}. Please ensure all required CSV files are in the directory.")
         st.stop()
 
+@st.cache_data
+def load_disclosures():
+    """Load the disclosures_only.csv file with filing-level data"""
+    try:
+        disclosures = pd.read_csv('disclosures_only.csv')
+        return disclosures
+    except FileNotFoundError as e:
+        st.error(f"disclosures_only.csv not found: {e}")
+        st.stop()
+
 results_df, residual_sds_df = load_data(filing_type)
+
+disclosures_df = load_disclosures()
 
 # Sidebar controls
 st.sidebar.header("Dashboard Controls")
@@ -283,6 +295,13 @@ else:
         value=10,
         step=1
     ) / 10000  # Convert basis points to decimal
+
+# Item 9.01 inclusion toggle
+include_item_901 = st.sidebar.checkbox(
+    "Include Item 9.01 in filing-level statistics",
+    value=True,
+    help="Item 9.01 (Financial Statements and Exhibits) occurs frequently with other items"
+)
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("*Adjust controls to dynamically update results*")
@@ -458,13 +477,138 @@ for item in items:
     else:
         classifications['neither'].append(item)
 
+def calculate_filing_statistics(classifications, disclosures_df, filing_type, include_901=True):
+    """Calculate filing-level statistics based on item classifications"""
+
+    # Filter disclosures based on filing type
+    if filing_type == "Gap Filings":
+        filings = disclosures_df[disclosures_df['EventGap_dummy'] == 1].copy()
+    elif filing_type == "No Gap Filings":
+        filings = disclosures_df[disclosures_df['EventGap_dummy'] == 0].copy()
+    else:  # All Filings
+        filings = disclosures_df.copy()
+
+    total_filings = len(filings)
+
+    if total_filings == 0:
+        return None
+
+    # Get item columns
+    item_columns = [col for col in filings.columns if col.startswith('Item_')]
+
+    # Optionally exclude Item_9.01
+    if not include_901 and 'Item_9.01' in item_columns:
+        item_columns.remove('Item_9.01')
+
+    # Create sets of items for each classification
+    current_material_items = set(classifications['current_material'])
+    current_items = set(classifications['current_material'] + classifications['current_not_material'])
+    material_items = set(classifications['current_material'] + classifications['material_not_current'])
+    neither_items = set(classifications['neither'])
+
+    # Initialize counters
+    stats = {
+        'current_material': {'only': 0, 'at_least_one': 0, 'none': 0},
+        'current': {'only': 0, 'at_least_one': 0, 'none': 0},
+        'material': {'only': 0, 'at_least_one': 0, 'none': 0},
+        'neither': {'only': 0, 'at_least_one': 0, 'none': 0}
+    }
+
+    # Analyze each filing
+    for idx, row in filings.iterrows():
+        # Get items present in this filing
+        present_items = [col for col in item_columns if row[col] == 1]
+        present_items_set = set(present_items)
+
+        if len(present_items) == 0:
+            continue
+
+        # Check Current & Material
+        cm_present = present_items_set & current_material_items
+        if len(cm_present) > 0 and present_items_set.issubset(current_material_items):
+            stats['current_material']['only'] += 1
+        if len(cm_present) > 0:
+            stats['current_material']['at_least_one'] += 1
+        if len(cm_present) == 0:
+            stats['current_material']['none'] += 1
+
+        # Check Current (Current & Material + Current Not Material)
+        c_present = present_items_set & current_items
+        if len(c_present) > 0 and present_items_set.issubset(current_items):
+            stats['current']['only'] += 1
+        if len(c_present) > 0:
+            stats['current']['at_least_one'] += 1
+        if len(c_present) == 0:
+            stats['current']['none'] += 1
+
+        # Check Material (Current & Material + Material Not Current)
+        m_present = present_items_set & material_items
+        if len(m_present) > 0 and present_items_set.issubset(material_items):
+            stats['material']['only'] += 1
+        if len(m_present) > 0:
+            stats['material']['at_least_one'] += 1
+        if len(m_present) == 0:
+            stats['material']['none'] += 1
+
+        # Check Neither
+        n_present = present_items_set & neither_items
+        if len(n_present) > 0 and present_items_set.issubset(neither_items):
+            stats['neither']['only'] += 1
+        if len(n_present) > 0:
+            stats['neither']['at_least_one'] += 1
+        if len(n_present) == 0:
+            stats['neither']['none'] += 1
+
+    # Convert to percentages
+    for category in stats:
+        for metric in stats[category]:
+            stats[category][metric] = (stats[category][metric] / total_filings) * 100
+
+    stats['total_filings'] = total_filings
+    return stats
+
 # Summary statistics
 st.header("Summary")
-summary_text = f"""Under current settings, **{len(classifications['current_material'])} items** are Current & Material, 
-**{len(classifications['current_not_material'])} items** are Current but Not Material, 
-**{len(classifications['material_not_current'])} items** are Material but Not Current, and 
+
+# Item-level summary
+summary_text = f"""Under current settings, **{len(classifications['current_material'])} items** are Current & Material,
+**{len(classifications['current_not_material'])} items** are Current but Not Material,
+**{len(classifications['material_not_current'])} items** are Material but Not Current, and
 **{len(classifications['neither'])} items** are Neither Current nor Material."""
 st.markdown(summary_text)
+
+# Filing-level statistics
+st.subheader("Filing-Level Statistics")
+filing_stats = calculate_filing_statistics(classifications, disclosures_df, filing_type, include_item_901)
+
+if filing_stats:
+    st.markdown(f"*Based on {filing_stats['total_filings']:,} filings" +
+                (" (excluding Item 9.01)" if not include_item_901 else "") + "*")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown("**Current & Material Items**")
+        st.markdown(f"- Only these items: **{filing_stats['current_material']['only']:.1f}%**")
+        st.markdown(f"- At least one: **{filing_stats['current_material']['at_least_one']:.1f}%**")
+        st.markdown(f"- None: **{filing_stats['current_material']['none']:.1f}%**")
+
+        st.markdown("")
+        st.markdown("**Neither Current nor Material**")
+        st.markdown(f"- Only these items: **{filing_stats['neither']['only']:.1f}%**")
+
+    with col2:
+        st.markdown("**Current Items**")
+        st.markdown(f"- Only current items: **{filing_stats['current']['only']:.1f}%**")
+        st.markdown(f"- At least one: **{filing_stats['current']['at_least_one']:.1f}%**")
+        st.markdown(f"- No current items: **{filing_stats['current']['none']:.1f}%**")
+
+    with col3:
+        st.markdown("**Material Items**")
+        st.markdown(f"- Only material items: **{filing_stats['material']['only']:.1f}%**")
+        st.markdown(f"- At least one: **{filing_stats['material']['at_least_one']:.1f}%**")
+        st.markdown(f"- No material items: **{filing_stats['material']['none']:.1f}%**")
+
 st.markdown("---")
 
 # Build classification table
