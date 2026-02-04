@@ -230,7 +230,18 @@ def load_data(filing_type):
 def load_disclosures():
     """Load the disclosures_only.csv file with filing-level data"""
     try:
-        disclosures = pd.read_csv('disclosures_only.csv')
+        # Only load Item columns and EventGap_dummy to reduce memory usage
+        columns_to_load = [
+            'EventGap_dummy',
+            'Item_1.01', 'Item_1.02', 'Item_1.03', 'Item_1.04', 'Item_1.05',
+            'Item_2.01', 'Item_2.02', 'Item_2.03', 'Item_2.04', 'Item_2.05', 'Item_2.06',
+            'Item_3.01', 'Item_3.02', 'Item_3.03',
+            'Item_4.01', 'Item_4.02',
+            'Item_5.01', 'Item_5.02', 'Item_5.03', 'Item_5.04', 'Item_5.05', 'Item_5.06', 'Item_5.07', 'Item_5.08',
+            'Item_7.01', 'Item_8.01', 'Item_9.01'
+        ]
+
+        disclosures = pd.read_csv('disclosures_only.csv', usecols=columns_to_load, low_memory=False)
         return disclosures
     except FileNotFoundError as e:
         st.error(f"disclosures_only.csv not found: {e}")
