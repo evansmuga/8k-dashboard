@@ -676,7 +676,7 @@ for category in ['Current Material', 'Current Not Material', 'Material Not Curre
     category_data = classification_df[classification_df['Category'] == category]
     if not category_data.empty:
         display_df = category_data.drop('Category', axis=1)
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        st.dataframe(display_df, width='stretch', hide_index=True)
     else:
         st.write("*No items in this category*")
 
@@ -779,15 +779,15 @@ def create_bar_chart(dv, dv_name, retail_flag='Not Retail'):
 # Create charts for each dependent variable
 st.subheader("Total Volume")
 fig_tv = create_bar_chart('Total Volume', 'Total Volume', 'Not Retail')
-st.plotly_chart(fig_tv, use_container_width=True)
+st.plotly_chart(fig_tv, width='stretch')
 
 st.subheader("Retail Volume")
 fig_rv = create_bar_chart('Total Volume', 'Retail Volume', 'Retail')
-st.plotly_chart(fig_rv, use_container_width=True)
+st.plotly_chart(fig_rv, width='stretch')
 
 st.subheader("Absolute Returns")
 fig_ar = create_bar_chart('Absolute Returns', 'Absolute Returns', 'Not Retail')
-st.plotly_chart(fig_ar, use_container_width=True)
+st.plotly_chart(fig_ar, width='stretch')
 
 # Download button for charts (requires kaleido and Chrome)
 st.markdown("---")
