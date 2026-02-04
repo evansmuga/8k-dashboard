@@ -251,6 +251,15 @@ sig_threshold = st.sidebar.slider(
     step=1.0
 ) / 100
 
+# Significance threshold for materiality
+materiality_sig_threshold = st.sidebar.slider(
+    "Significance Level for 'Material' Classification (%)",
+    min_value=1.0,
+    max_value=20.0,
+    value=5.0,
+    step=1.0
+) / 100
+
 # Coefficient scaling toggle
 scale_by_sd = st.sidebar.checkbox(
     "Scale coefficients by residual standard deviations",
@@ -346,11 +355,17 @@ def is_current(item):
 
 def is_material(item):
     """Check if item is material based on absolute returns"""
-    post_coef, _ = get_coefficient_value(item, 'Absolute Returns', selected_window, 'Post')
-    pre_coef, _ = get_coefficient_value(item, 'Absolute Returns', selected_window, 'Pre')
+    post_coef, post_t = get_coefficient_value(item, 'Absolute Returns', selected_window, 'Post')
+    pre_coef, pre_t = get_coefficient_value(item, 'Absolute Returns', selected_window, 'Pre')
 
     if post_coef is None or pre_coef is None:
         return False
+
+    # Treat non-significant coefficients as zero
+    if not is_significant(post_t, materiality_sig_threshold):
+        post_coef = 0
+    if not is_significant(pre_t, materiality_sig_threshold):
+        pre_coef = 0
 
     total_effect = pre_coef + post_coef
 
