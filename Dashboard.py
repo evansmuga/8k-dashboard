@@ -352,21 +352,25 @@ def is_material(item):
     if post_coef is None or pre_coef is None:
         return False
 
-    # Get residual SD for returns (use Post period)
-    sd_row = residual_sds_df[
-        (residual_sds_df['Dependent_Variable'] == 'Absolute Returns') &
-        (residual_sds_df['Window'] == selected_window) &
-        (residual_sds_df['Horizon'] == 'Post')
-        ]
-
-    if sd_row.empty:
-        return False
-
-    sd = sd_row['Residual_SD'].values[0]
-
-    # Sum of pre and post > threshold * SD
     total_effect = pre_coef + post_coef
-    return total_effect > (materiality_threshold * sd)
+
+    if scale_by_sd:
+        # Get residual SD for returns (use Post period)
+        sd_row = residual_sds_df[
+            (residual_sds_df['Dependent_Variable'] == 'Absolute Returns') &
+            (residual_sds_df['Window'] == selected_window) &
+            (residual_sds_df['Horizon'] == 'Post')
+            ]
+
+        if sd_row.empty:
+            return False
+
+        sd = sd_row['Residual_SD'].values[0]
+        # Sum of pre and post > threshold * SD
+        return total_effect > (materiality_threshold * sd)
+    else:
+        # Direct comparison in basis points (already converted to decimal)
+        return total_effect > materiality_threshold
 
 def has_retail_flag(item):
     """Check if retail responds when total volume doesn't"""
