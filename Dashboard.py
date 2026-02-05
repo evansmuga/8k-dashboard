@@ -636,7 +636,8 @@ def build_classification_table():
             row_data = {
                 'Category': category.replace('_', ' ').title(),
                 'Item': item,
-                'Description': description
+                'Description': description,
+                'Filing_Count': disclosures_df[item].sum()
             }
 
             # Total Volume (Non-Retail)
